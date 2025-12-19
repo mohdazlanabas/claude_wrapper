@@ -26,19 +26,28 @@ class ClaudeWrapper:
             "content": user_message,
             "timestamp": datetime.now().isoformat()
         })
-        
+
         # Prepare messages for API (without timestamps)
         api_messages = [
             {"role": msg["role"], "content": msg["content"]}
             for msg in self.conversation_history
             if msg["role"] in ["user", "assistant"]
         ]
-        
+
+        # Inject current date/time into system prompt
+        current_time = datetime.now()
+        date_context = f"Current date and time: {current_time.strftime('%A, %B %d, %Y at %I:%M %p')}"
+
+        if system_prompt:
+            enhanced_system_prompt = f"{date_context}\n\n{system_prompt}"
+        else:
+            enhanced_system_prompt = f"{date_context}\n\nYou are a helpful AI assistant."
+
         # Make API call
         response = self.client.messages.create(
             model=self.model,
             max_tokens=4000,
-            system=system_prompt if system_prompt else "You are a helpful AI assistant.",
+            system=enhanced_system_prompt,
             messages=api_messages
         )
         
