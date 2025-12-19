@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Wrapper - Practice Project</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            height: calc(100vh - 40px);
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow-y: auto;
+        }
+        
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .chat-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .api-key-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .context-form {
+            margin-bottom: 20px;
+        }
+        
+        .context-input {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        
+        textarea.context-input {
+            min-height: 80px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .context-list {
+            margin-top: 10px;
+        }
+        
+        .context-item {
+            background: #f5f5f5;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+        
+        .message-user {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+        }
+        
+        .message-assistant {
+            background: white;
+            border: 1px solid #e0e0e0;
+            margin-right: auto;
+        }
+        
+        .message-timestamp {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+        
+        .chat-input-area {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            resize: vertical;
+            min-height: 50px;
+            font-family: inherit;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .status {
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+        
+        .status-info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .status-error {
+            background: #ffebee;
+            color: #c62828;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>⚙️ Settings</h1>
+            
+            <h2>API Key</h2>
+            <input type="password" id="apiKey" class="api-key-input" placeholder="sk-ant-...">
+            <div style="font-size: 11px; color: #666; margin-bottom: 20px;">
+                Get your key from console.anthropic.com
+            </div>
+            
+            <h2>MCP Context</h2>
+            <div class="context-form">
+                <input type="text" id="contextName" class="context-input" placeholder="Context name (e.g., user_profile)">
+                <textarea id="contextContent" class="context-input" placeholder="Context content..."></textarea>
+                <button class="btn btn-secondary btn-small" onclick="addContext()">Add Context</button>
+            </div>
+            
+            <div class="context-list" id="contextList"></div>
+            
+            <div style="margin-top: 20px;">
+                <button class="btn btn-secondary btn-small" onclick="clearHistory()" style="width: 100%;">Clear History</button>
+            </div>
+        </div>
+        
+        <div class="main-panel">
+            <div class="chat-container">
+                <h1>💬 Claude Wrapper Chat</h1>
+                
+                <div class="checkbox-container">
+                    <input type="checkbox" id="useContext">
+                    <label for="useContext">Use MCP Context</label>
+                </div>
+                
+                <div id="status"></div>
+                
+                <div class="chat-messages" id="chatMessages"></div>
+                
+                <div class="chat-input-area">
+                    <textarea id="messageInput" class="chat-input" placeholder="Type your message..."></textarea>
+                    <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.className = isError ? 'status status-error' : 'status status-info';
+            status.textContent = message;
+            setTimeout(() => status.textContent = '', 3000);
+        }
+        
+        function addMessage(role, content, timestamp) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${role}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.textContent = content;
+            messageDiv.appendChild(contentDiv);
+            
+            if (timestamp) {
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'message-timestamp';
+                timeDiv.textContent = new Date(timestamp).toLocaleString();
+                messageDiv.appendChild(timeDiv);
+            }
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        async function sendMessage() {
+            const apiKey = document.getElementById('apiKey').value;
+            const message = document.getElementById('messageInput').value;
+            const useContext = document.getElementById('useContext').checked;
+            
+            if (!apiKey) {
+                showStatus('Please enter your API key', true);
+                return;
+            }
+            
+            if (!message.trim()) {
+                showStatus('Please enter a message', true);
+                return;
+            }
+            
+            addMessage('user', message, new Date().toISOString());
+            document.getElementById('messageInput').value = '';
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        api_key: apiKey,
+                        message: message,
+                        use_context: useContext
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    showStatus(data.error, true);
+                } else {
+                    addMessage('assistant', data.response, new Date().toISOString());
+                    showStatus(`Message sent (${data.history_length} messages in history)`);
+                }
+            } catch (error) {
+                showStatus('Error: ' + error.message, true);
+            }
+        }
+        
+        async function addContext() {
+            const name = document.getElementById('contextName').value;
+            const content = document.getElementById('contextContent').value;
+            
+            if (!name || !content) {
+                showStatus('Please enter both name and content', true);
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/context', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({name, content})
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    showStatus(data.error, true);
+                } else {
+                    document.getElementById('contextName').value = '';
+                    document.getElementById('contextContent').value = '';
+                    loadContexts();
+                    showStatus('Context added successfully');
+                }
+            } catch (error) {
+                showStatus('Error: ' + error.message, true);
+            }
+        }
+        
+        async function loadContexts() {
+            try {
+                const response = await fetch('/api/contexts');
+                const data = await response.json();
+                
+                const listDiv = document.getElementById('contextList');
+                listDiv.innerHTML = data.contexts.map(ctx => 
+                    `<div class="context-item">📋 ${ctx}</div>`
+                ).join('');
+            } catch (error) {
+                console.error('Error loading contexts:', error);
+            }
+        }
+        
+        async function clearHistory() {
+            if (!confirm('Clear conversation history?')) return;
+            
+            try {
+                await fetch('/api/clear', {method: 'POST'});
+                document.getElementById('chatMessages').innerHTML = '';
+                showStatus('History cleared');
+            } catch (error) {
+                showStatus('Error: ' + error.message, true);
+            }
+        }
+        
+        // Enter to send
+        document.getElementById('messageInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        // Load contexts on page load
+        loadContexts();
+    </script>
+</body>
+</html>
